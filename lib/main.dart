@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
@@ -57,6 +59,8 @@ class SwarmElementData {
   double x = 0.5;
   double y = 0.2;
   double rotation = pi/2;
+  double oldRx = 0.0;
+  double oldRy = 0.0;
 }
 
 class _FishSwarmState extends State<FishSwarm> {
@@ -64,15 +68,16 @@ class _FishSwarmState extends State<FishSwarm> {
   int repulsion = 1;
   int alignment = 1;
   double elementWidth = 0.2;
-  int numElements = 5;
-  double v = 0.05;
+  int numElements = 20;
+  double v = 0.01;
+  double alignmentParameter = 0.0;
 
   List<SwarmElementData> elements = new List();
 
   @override
   void initState() {
 
-    for(int i = 0; i < 10; ++i){
+    for(int i = 0; i < numElements; ++i){
       elements.add(SwarmElementData());
     }
 
@@ -82,42 +87,107 @@ class _FishSwarmState extends State<FishSwarm> {
     super.initState();
   }
 
+  void avoidWalls()
+  {
+    double B = 0.9;
+    var rng = new Random();
+    for(int i = 0; i < numElements; i++) {
+      var X = elements[i].x;
+      var Y = elements[i].y;
+      var rot = elements[i].rotation;
+      //print("X $X Y $Y R $rot");
+
+      if (X < -B && (rot > pi/2 || rot < -pi/2)) {
+        rot = rng.nextDouble() * pi - pi/2.0;
+      }
+      else if (X > B && (rot < pi/2 || rot > -pi/2)) {
+        var int = rng.nextInt(2);
+        rot = rng.nextDouble() * pi/2 + pi/2.0;
+        if(int == 0) {
+          rot *= -1;
+        }
+      }
+      if (Y < -B && rot < 0) {
+        rot = rng.nextDouble() * pi;
+      }
+      else if (Y > B && rot > 0) {
+        var int = rng.nextInt(2);
+        rot = rng.nextDouble() * pi - pi;
+        if(int == 0) {
+          rot *= -1;
+        }
+      }
+
+      elements[i].rotation = rot;
+    }
+  }
+
+  List<int> listNeighboursInRange(elementIndex, double range)
+  {
+    List<int> retval = List<int>();
+    SwarmElementData _thisElement = elements[elementIndex];
+    for(int i = 0; i < numElements; i++) {
+      if (i == elementIndex)
+        continue;
+
+      SwarmElementData _otherElement = elements[i];
+      if (pow(_thisElement.x - _otherElement.x, 2) +
+          pow(_thisElement.y - _otherElement.y, 2) < range) {
+        retval.add(i);
+      }
+    }
+
+    return retval;
+  }
+
+  void alignWithNeighbours()
+  {
+    for(int i = 0; i < numElements; i++) {
+      elements[i].oldRx = cos(elements[i].rotation);
+      elements[i].oldRy = sin(elements[i].rotation);
+    }
+
+    if(alignmentParameter == 0.0)
+      return;
+
+    double sumX = 0.0;
+    double sumY = 0.0;
+
+    for(int i = 0; i < numElements; i++) {
+      List<int> neighbours = listNeighboursInRange(i, 100.0);
+      for(int index = 0; index < neighbours.length; index++) {
+        sumX += elements[index].oldRx;
+        sumY += elements[index].oldRy;
+      }
+
+      if(sumX == 0.0 && sumY == 0.0)
+        continue;
+
+      double length = sqrt(pow(sumX,2) + pow(sumY, 2));
+      sumX /= length;
+      sumY /= length;
+
+      //print(elements[i].rotation)
+
+      elements[i].rotation = atan2(elements[i].oldRy + sumY * alignmentParameter,
+          elements[i].oldRx + sumX * alignmentParameter);
+
+    }
+  }
+
+  void applyVelocity(){
+    for(int i = 0; i < numElements; i++) {
+      elements[i].x += v * cos(elements[i].rotation);
+      elements[i].y += v * sin(elements[i].rotation);
+    }
+  }
+
   void updateSwarm()
   {
     setState(() {
-      double B = 0.9;
-      var rng = new Random();
-      for(int i = 0; i < numElements; i++) {
-        var X = elements[i].x;
-        var Y = elements[i].y;
-        var rot = elements[i].rotation;
-        //print("X $X Y $Y R $rot");
-
-        if (X < -B && (rot > pi/2 || rot < -pi/2)) {
-          rot = rng.nextDouble() * pi - pi/2.0;
-        }
-        else if (X > B && (rot < pi/2 || rot > -pi/2)) {
-          var int = rng.nextInt(2);
-          rot = rng.nextDouble() * pi/2 + pi/2.0;
-          if(int == 0) {
-            rot *= -1;
-          }
-        }
-        if (Y < -B && rot < 0) {
-          rot = rng.nextDouble() * pi;
-        }
-        else if (Y > B && rot > 0) {
-          var int = rng.nextInt(2);
-          rot = rng.nextDouble() * pi - pi;
-          if(int == 0) {
-            rot *= -1;
-          }
-        }
-
-        elements[i].rotation = rot;
-        elements[i].x += v * cos(rot);
-        elements[i].y += v * sin(rot);
-      }
+      avoidWalls();
+      alignWithNeighbours();
+      applyVelocity();
     });
   }
 
@@ -139,21 +209,57 @@ class _FishSwarmState extends State<FishSwarm> {
       ),
       body: Stack(
           children: <Widget>[
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: FractionallySizedBox(
-                heightFactor: 0.1,
-                child: Slider(
-                  value: v,
-                  min: 0.01,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Slider(
+                value: v,
+                min: 0.001,
+                max: 0.02,
+                onChanged: (double value) {
+                  setState(() {
+                    v = value;
+                  });
+                },
+              ),
+                Slider(
+                  value: alignmentParameter,
+                  min: 0.0,
                   max: 0.1,
                   onChanged: (double value) {
                     setState(() {
-                      v = value;
+                      alignmentParameter = value;
                     });
                   },
                 ),
-              ),
+                /*FractionallySizedBox(
+                  heightFactor: 0.1,
+                  child: Slider(
+                    value: v,
+                    min: 0.01,
+                    max: 0.1,
+                    onChanged: (double value) {
+                      setState(() {
+                        v = value;
+                      });
+                    },
+                  ),
+                ),
+                FractionallySizedBox(
+                  heightFactor: 0.1,
+                  child: Slider(
+                    value: alignmentParameter,
+                    min: 0.0,
+                    max: 0.1,
+                    onChanged: (double value) {
+                      setState(() {
+                        alignmentParameter = value;
+                      });
+                    },
+                  ),
+                ),*/
+              ],
             ),
             for(int i = 0; i<numElements; i++)
               Align(

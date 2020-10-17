@@ -63,6 +63,13 @@ class SwarmElementData {
   double oldRy = 0.0;
 }
 
+class IndexAndDistance {
+
+  IndexAndDistance(this.index, this.distance);
+  int index;
+  double distance;
+}
+
 class _FishSwarmState extends State<FishSwarm> {
   int attraction = 1;
   int repulsion = 1;
@@ -71,6 +78,7 @@ class _FishSwarmState extends State<FishSwarm> {
   int numElements = 20;
   double v = 0.01;
   double alignmentParameter = 0.0;
+  double avoidanceParameter = 0.1;
 
   List<SwarmElementData> elements = new List();
 
@@ -122,18 +130,19 @@ class _FishSwarmState extends State<FishSwarm> {
     }
   }
 
-  List<int> listNeighboursInRange(elementIndex, double range)
+  List<IndexAndDistance> listNeighboursInRange(elementIndex, double range)
   {
-    List<int> retval = List<int>();
+    List<IndexAndDistance> retval = List<IndexAndDistance>();
     SwarmElementData _thisElement = elements[elementIndex];
     for(int i = 0; i < numElements; i++) {
       if (i == elementIndex)
         continue;
 
       SwarmElementData _otherElement = elements[i];
-      if (pow(_thisElement.x - _otherElement.x, 2) +
-          pow(_thisElement.y - _otherElement.y, 2) < range) {
-        retval.add(i);
+      var distance = sqrt(pow(_thisElement.x - _otherElement.x, 2) +
+          pow(_thisElement.y - _otherElement.y, 2));
+      if (distance < range) {
+        retval.add(IndexAndDistance(i, distance));
       }
     }
 
@@ -154,10 +163,10 @@ class _FishSwarmState extends State<FishSwarm> {
     double sumY = 0.0;
 
     for(int i = 0; i < numElements; i++) {
-      List<int> neighbours = listNeighboursInRange(i, 100.0);
+      List<IndexAndDistance> neighbours = listNeighboursInRange(i, 30.0);
       for(int index = 0; index < neighbours.length; index++) {
-        sumX += elements[index].oldRx;
-        sumY += elements[index].oldRy;
+        sumX += elements[neighbours[index].index].oldRx;
+        sumY += elements[neighbours[index].index].oldRy;
       }
 
       if(sumX == 0.0 && sumY == 0.0)
@@ -166,6 +175,35 @@ class _FishSwarmState extends State<FishSwarm> {
       double length = sqrt(pow(sumX,2) + pow(sumY, 2));
       sumX /= length;
       sumY /= length;
+
+      //print(elements[i].rotation)
+
+      elements[i].rotation = atan2(elements[i].oldRy + sumY * alignmentParameter,
+          elements[i].oldRx + sumX * alignmentParameter);
+
+    }
+  }
+
+  void avoidNeighbours(){
+    for(int i = 0; i < numElements; i++) {
+      elements[i].oldRx = cos(elements[i].rotation);
+      elements[i].oldRy = sin(elements[i].rotation);
+    }
+
+    double sumX = 0.0;
+    double sumY = 0.0;
+
+    for(int i = 0; i < numElements; i++) {
+      List<IndexAndDistance> neighbours = listNeighboursInRange(i, 30.0);
+      for(int index = 0; index < neighbours.length; index++) {
+        double force = avoidanceParameter/pow(neighbours[index].distance,2);
+
+        sumX += force * (elements[i].x - elements[neighbours[index].index].x);
+        sumY += force * (elements[i].y - elements[neighbours[index].index].y);
+      }
+
+      if(sumX == 0.0 && sumY == 0.0)
+        continue;
 
       //print(elements[i].rotation)
 
@@ -185,8 +223,9 @@ class _FishSwarmState extends State<FishSwarm> {
   void updateSwarm()
   {
     setState(() {
-      avoidWalls();
       alignWithNeighbours();
+      avoidNeighbours();
+      avoidWalls();
       applyVelocity();
     });
   }
@@ -210,19 +249,18 @@ class _FishSwarmState extends State<FishSwarm> {
       body: Stack(
           children: <Widget>[
             Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Slider(
-                value: v,
-                min: 0.001,
-                max: 0.02,
-                onChanged: (double value) {
-                  setState(() {
-                    v = value;
-                  });
-                },
-              ),
+                  value: v,
+                  min: 0.001,
+                  max: 0.02,
+                  onChanged: (double value) {
+                    setState(() {
+                      v = value;
+                    });
+                  },
+                ),
                 Slider(
                   value: alignmentParameter,
                   min: 0.0,
@@ -233,32 +271,16 @@ class _FishSwarmState extends State<FishSwarm> {
                     });
                   },
                 ),
-                /*FractionallySizedBox(
-                  heightFactor: 0.1,
-                  child: Slider(
-                    value: v,
-                    min: 0.01,
-                    max: 0.1,
-                    onChanged: (double value) {
-                      setState(() {
-                        v = value;
-                      });
-                    },
-                  ),
+                Slider(
+                  value: avoidanceParameter,
+                  min: 0.0,
+                  max: 1.0,
+                  onChanged: (double value) {
+                    setState(() {
+                      avoidanceParameter = value;
+                    });
+                  },
                 ),
-                FractionallySizedBox(
-                  heightFactor: 0.1,
-                  child: Slider(
-                    value: alignmentParameter,
-                    min: 0.0,
-                    max: 0.1,
-                    onChanged: (double value) {
-                      setState(() {
-                        alignmentParameter = value;
-                      });
-                    },
-                  ),
-                ),*/
               ],
             ),
             for(int i = 0; i<numElements; i++)

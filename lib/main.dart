@@ -79,7 +79,7 @@ class _FishSwarmState extends State<FishSwarm> {
   double v = 0.01;
   double alignmentParameter = 0.0;
   double avoidanceParameter = 0.1;
-  double attractionParameter = 0.1;
+  double attractionParameter = 0.01;
 
   List<SwarmElementData> elements = new List();
 
@@ -98,36 +98,33 @@ class _FishSwarmState extends State<FishSwarm> {
 
   void avoidWalls()
   {
-    double B = 0.9;
-    var rng = new Random();
+    for(int i = 0; i < numElements; i++) {
+      elements[i].oldRx = cos(elements[i].rotation);
+      elements[i].oldRy = sin(elements[i].rotation);
+    }
+
+    double B = 0.8;
     for(int i = 0; i < numElements; i++) {
       var X = elements[i].x;
       var Y = elements[i].y;
-      var rot = elements[i].rotation;
       //print("X $X Y $Y R $rot");
-
-      if (X < -B && (rot > pi/2 || rot < -pi/2)) {
-        rot = rng.nextDouble() * pi - pi/2.0;
+      double xPush = 0.0;
+      double yPush = 0.0;
+      if (X < -B) {
+        xPush = X + B;
       }
-      else if (X > B && (rot < pi/2 || rot > -pi/2)) {
-        var int = rng.nextInt(2);
-        rot = rng.nextDouble() * pi/2 + pi/2.0;
-        if(int == 0) {
-          rot *= -1;
-        }
+      else if (X > B) {
+        xPush = X - B;
       }
-      if (Y < -B && rot < 0) {
-        rot = rng.nextDouble() * pi;
+      if (Y < -B) {
+        yPush = Y + B;
       }
-      else if (Y > B && rot > 0) {
-        var int = rng.nextInt(2);
-        rot = rng.nextDouble() * pi - pi;
-        if(int == 0) {
-          rot *= -1;
-        }
+      else if (Y > B) {
+        yPush = Y - B;
       }
 
-      elements[i].rotation = rot;
+      elements[i].rotation = atan2(elements[i].oldRy - yPush,
+          elements[i].oldRx - xPush);
     }
   }
 
@@ -143,7 +140,7 @@ class _FishSwarmState extends State<FishSwarm> {
       var distance = sqrt(pow(_thisElement.x - _otherElement.x, 2) +
           pow(_thisElement.y - _otherElement.y, 2));
       if (distance < range) {
-        retval.add(IndexAndDistance(i, distance));
+        retval.add(IndexAndDistance(i, distance < 0.001 ? 0.001 : distance));
       }
     }
 
@@ -177,11 +174,10 @@ class _FishSwarmState extends State<FishSwarm> {
       sumX /= length;
       sumY /= length;
 
-      //print(elements[i].rotation)
+
 
       elements[i].rotation = atan2(elements[i].oldRy + sumY * alignmentParameter,
           elements[i].oldRx + sumX * alignmentParameter);
-
     }
   }
 
@@ -206,11 +202,8 @@ class _FishSwarmState extends State<FishSwarm> {
       if(sumX == 0.0 && sumY == 0.0)
         continue;
 
-      //print(elements[i].rotation)
-
       elements[i].rotation = atan2(elements[i].oldRy + sumY * alignmentParameter,
           elements[i].oldRx + sumX * alignmentParameter);
-
     }
   }
 
@@ -237,10 +230,11 @@ class _FishSwarmState extends State<FishSwarm> {
       double directionY = avgY - elements[i].y;
 
       double length = sqrt(pow(directionX, 2) + pow(directionY, 2));
+      if(directionY == 0 && directionX == 0)
+        length = 10.0;
 
       elements[i].rotation = atan2(elements[i].oldRy + directionY * attractionParameter / length,
           elements[i].oldRx + directionX * attractionParameter / length);
-
     }
   }
 
@@ -256,8 +250,8 @@ class _FishSwarmState extends State<FishSwarm> {
     setState(() {
       alignWithNeighbours();
       avoidNeighbours();
-      avoidWalls();
       turnTowardNeighbours();
+      avoidWalls();
       applyVelocity();
     });
   }

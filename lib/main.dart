@@ -1,8 +1,8 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
+
+import 'package:flutter/rendering.dart';
 
 void main() {
   runApp(MyApp());
@@ -57,7 +57,6 @@ class SwarmElementData {
   double x = 0.5;
   double y = 0.2;
   double rotation = pi/2;
-  double v = 0.05;
 }
 
 class _FishSwarmState extends State<FishSwarm> {
@@ -65,6 +64,8 @@ class _FishSwarmState extends State<FishSwarm> {
   int repulsion = 1;
   int alignment = 1;
   double elementWidth = 0.2;
+  int numElements = 5;
+  double v = 0.05;
 
   List<SwarmElementData> elements = new List();
 
@@ -85,37 +86,38 @@ class _FishSwarmState extends State<FishSwarm> {
   {
     setState(() {
       double B = 0.9;
-    var X = elements[0].x;
-      var Y = elements[0].y;
-      var V = elements[0].v;
-      var rot = elements[0].rotation;
-      print("X $X Y $Y R $rot");
       var rng = new Random();
-      if (X < -B && (rot > pi/2 || rot < -pi/2)) {
-        rot = rng.nextDouble() * pi - pi/2.0;
-      }
-      else if (X > B && (rot < pi/2 || rot > -pi/2)) {
-        var int = rng.nextInt(2);
-        rot = rng.nextDouble() * pi/2 + pi/2.0;
-        if(int == 0) {
-          rot *= -1;
-        }
-      }
-      if (Y < -B && rot < 0) {
-        rot = rng.nextDouble() * pi;
-      }
-      else if (Y > B && rot > 0) {
-        var int = rng.nextInt(2);
-        rot = rng.nextDouble() * pi - pi;
-        if(int == 0) {
-          rot *= -1;
-        }
-      }
+      for(int i = 0; i < numElements; i++) {
+        var X = elements[i].x;
+        var Y = elements[i].y;
+        var rot = elements[i].rotation;
+        //print("X $X Y $Y R $rot");
 
-      elements[0].rotation = rot;
-      elements[0].x += V * cos(rot);
-      elements[0].y += V * sin(rot);
+        if (X < -B && (rot > pi/2 || rot < -pi/2)) {
+          rot = rng.nextDouble() * pi - pi/2.0;
+        }
+        else if (X > B && (rot < pi/2 || rot > -pi/2)) {
+          var int = rng.nextInt(2);
+          rot = rng.nextDouble() * pi/2 + pi/2.0;
+          if(int == 0) {
+            rot *= -1;
+          }
+        }
+        if (Y < -B && rot < 0) {
+          rot = rng.nextDouble() * pi;
+        }
+        else if (Y > B && rot > 0) {
+          var int = rng.nextInt(2);
+          rot = rng.nextDouble() * pi - pi;
+          if(int == 0) {
+            rot *= -1;
+          }
+        }
 
+        elements[i].rotation = rot;
+        elements[i].x += v * cos(rot);
+        elements[i].y += v * sin(rot);
+      }
     });
   }
 
@@ -127,36 +129,50 @@ class _FishSwarmState extends State<FishSwarm> {
     // The Flutter framework has been optimized to make rerunning build methods
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
+
+
     return Scaffold(
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: Center(
-        child: Stack(
+      body: Stack(
+        alignment: Alignment.center,
+          fit: StackFit.passthrough,
           children: <Widget>[
             Align(
-              alignment: Alignment(elements[0].x, elements[0].y),
-              child: FractionallySizedBox(
-                widthFactor: 0.05,
-                heightFactor: 0.05,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.orange,
-                    shape: BoxShape.circle,
-                  ),
+              alignment: Alignment.bottomCenter,
+              child:  (
+                heightFactor: 0.1,
+                child: Slider(
+                  value: v,
+                  min: 0.01,
+                  max: 0.1,
+                  onChanged: (double value) {
+                    setState(() {
+                      v = value;
+                    });
+                  },
                 ),
               ),
             ),
+            for(int i = 0; i<numElements; i++)
+              Align(
+                alignment: Alignment(elements[i].x, elements[i].y),
+                child: FractionallySizedBox(
+                  widthFactor: 0.05,
+                  heightFactor: 0.05,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.orange,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: (){},
-        tooltip: 'Increment',
-        child: Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }

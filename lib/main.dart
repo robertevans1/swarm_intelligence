@@ -138,12 +138,10 @@ class _FishSwarmState extends State<FishSwarm> {
         title: Text(widget.title),
       ),
       body: Stack(
-        alignment: Alignment.center,
-          fit: StackFit.passthrough,
           children: <Widget>[
             Align(
               alignment: Alignment.bottomCenter,
-              child:  (
+              child: FractionallySizedBox(
                 heightFactor: 0.1,
                 child: Slider(
                   value: v,
@@ -161,12 +159,14 @@ class _FishSwarmState extends State<FishSwarm> {
               Align(
                 alignment: Alignment(elements[i].x, elements[i].y),
                 child: FractionallySizedBox(
-                  widthFactor: 0.05,
-                  heightFactor: 0.05,
-                  child: Container(
-                    decoration: BoxDecoration(
+                  widthFactor: 0.1,
+                  heightFactor: 0.1,
+                  child: Transform.rotate(
+                      angle: elements[i].rotation,
+                    child: Icon(
+                      Icons.arrow_right,
                       color: Colors.orange,
-                      shape: BoxShape.circle,
+                      size: 50.0,
                     ),
                   ),
                 ),

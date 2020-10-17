@@ -79,6 +79,7 @@ class _FishSwarmState extends State<FishSwarm> {
   double v = 0.01;
   double alignmentParameter = 0.0;
   double avoidanceParameter = 0.1;
+  double attractionParameter = 0.1;
 
   List<SwarmElementData> elements = new List();
 
@@ -194,7 +195,7 @@ class _FishSwarmState extends State<FishSwarm> {
     double sumY = 0.0;
 
     for(int i = 0; i < numElements; i++) {
-      List<IndexAndDistance> neighbours = listNeighboursInRange(i, 30.0);
+      List<IndexAndDistance> neighbours = listNeighboursInRange(i, 100.0);
       for(int index = 0; index < neighbours.length; index++) {
         double force = avoidanceParameter/pow(neighbours[index].distance,2);
 
@@ -213,6 +214,36 @@ class _FishSwarmState extends State<FishSwarm> {
     }
   }
 
+  void turnTowardNeighbours(){
+    for(int i = 0; i < numElements; i++) {
+      elements[i].oldRx = cos(elements[i].rotation);
+      elements[i].oldRy = sin(elements[i].rotation);
+    }
+
+    double sumX = 0.0;
+    double sumY = 0.0;
+
+    for(int i = 0; i < numElements; i++) {
+      List<IndexAndDistance> neighbours = listNeighboursInRange(i, 400.0);
+      for(int index = 0; index < neighbours.length; index++) {
+        sumX += elements[neighbours[index].index].x;
+        sumY += elements[neighbours[index].index].y;
+      }
+
+      double avgX = sumX /neighbours.length;
+      double avgY = sumY / neighbours.length;
+
+      double directionX = avgX - elements[i].x;
+      double directionY = avgY - elements[i].y;
+
+      double length = sqrt(pow(directionX, 2) + pow(directionY, 2));
+
+      elements[i].rotation = atan2(elements[i].oldRy + directionY * attractionParameter / length,
+          elements[i].oldRx + directionX * attractionParameter / length);
+
+    }
+  }
+
   void applyVelocity(){
     for(int i = 0; i < numElements; i++) {
       elements[i].x += v * cos(elements[i].rotation);
@@ -226,6 +257,7 @@ class _FishSwarmState extends State<FishSwarm> {
       alignWithNeighbours();
       avoidNeighbours();
       avoidWalls();
+      turnTowardNeighbours();
       applyVelocity();
     });
   }
@@ -251,35 +283,53 @@ class _FishSwarmState extends State<FishSwarm> {
             Column(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Slider(
-                  value: v,
-                  min: 0.001,
-                  max: 0.02,
-                  onChanged: (double value) {
-                    setState(() {
-                      v = value;
-                    });
-                  },
+                Row(
+                  children: [
+                    Slider(
+                      value: v,
+                      min: 0.001,
+                      max: 0.02,
+                      onChanged: (double value) {
+                        setState(() {
+                          v = value;
+                        });
+                      },
+                    ),
+                    Slider(
+                      value: alignmentParameter,
+                      min: 0.0,
+                      max: 0.1,
+                      onChanged: (double value) {
+                        setState(() {
+                          alignmentParameter = value;
+                        });
+                      },
+                    ),
+                  ],
                 ),
-                Slider(
-                  value: alignmentParameter,
-                  min: 0.0,
-                  max: 0.1,
-                  onChanged: (double value) {
-                    setState(() {
-                      alignmentParameter = value;
-                    });
-                  },
-                ),
-                Slider(
-                  value: avoidanceParameter,
-                  min: 0.0,
-                  max: 1.0,
-                  onChanged: (double value) {
-                    setState(() {
-                      avoidanceParameter = value;
-                    });
-                  },
+                Row(
+                  children: [
+                    Slider(
+                      value: avoidanceParameter,
+                      min: 0.0,
+                      max: 1.0,
+                      onChanged: (double value) {
+                        setState(() {
+                          avoidanceParameter = value;
+                        });
+                      },
+                    ),
+                    Slider(
+                      value: attractionParameter,
+                      min: 0.0,
+                      max: 0.1,
+                      onChanged: (double value) {
+                        setState(() {
+                          attractionParameter = value;
+                        });
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),

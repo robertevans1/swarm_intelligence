@@ -3,6 +3,8 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
+import '../swarm/domain/fish.dart';
+
 void main() {
   runApp(SwarmIntelligence());
 }
@@ -29,14 +31,6 @@ class FishSwarm extends StatefulWidget {
   FishSwarmState createState() => FishSwarmState();
 }
 
-class SwarmElementData {
-  double x = 0.5;
-  double y = 0.2;
-  double rotation = pi / 2;
-  double oldRx = 0.0;
-  double oldRy = 0.0;
-}
-
 class IndexAndDistance {
   IndexAndDistance(this.index, this.distance);
   int index;
@@ -48,18 +42,18 @@ class FishSwarmState extends State<FishSwarm> {
   int repulsion = 1;
   int alignment = 1;
   double elementWidth = 0.2;
-  int numElements = 20;
+  int numFishes = 20;
   double v = 0.01;
   double alignmentParameter = 0.0;
   double avoidanceParameter = 0.1;
   double attractionParameter = 0.01;
 
-  final elements = List<SwarmElementData>.empty(growable: true);
+  final fishes = List<Fish>.empty(growable: true);
 
   @override
   void initState() {
-    for (int i = 0; i < numElements; ++i) {
-      elements.add(SwarmElementData());
+    for (int i = 0; i < numFishes; ++i) {
+      fishes.add(const Fish.initial());
     }
 
     const duration = Duration(milliseconds: 10);
@@ -69,15 +63,17 @@ class FishSwarmState extends State<FishSwarm> {
   }
 
   void avoidWalls() {
-    for (int i = 0; i < numElements; i++) {
-      elements[i].oldRx = cos(elements[i].rotation);
-      elements[i].oldRy = sin(elements[i].rotation);
+    for (int i = 0; i < numFishes; i++) {
+      fishes[i] = fishes[i].copyWith(
+        oldRx: cos(fishes[i].rotation),
+        oldRy: sin(fishes[i].rotation),
+      );
     }
 
     double B = 0.8;
-    for (int i = 0; i < numElements; i++) {
-      var X = elements[i].x;
-      var Y = elements[i].y;
+    for (int i = 0; i < numFishes; i++) {
+      var X = fishes[i].x;
+      var Y = fishes[i].y;
       //print("X $X Y $Y R $rot");
       double xPush = 0.0;
       double yPush = 0.0;
@@ -92,19 +88,20 @@ class FishSwarmState extends State<FishSwarm> {
         yPush = Y - B;
       }
 
-      elements[i].rotation =
-          atan2(elements[i].oldRy - yPush, elements[i].oldRx - xPush);
+      fishes[i] = fishes[i].copyWith(
+        rotation: atan2(fishes[i].oldRy - yPush, fishes[i].oldRx - xPush),
+      );
     }
   }
 
   List<IndexAndDistance> listNeighboursInRange(elementIndex, double range) {
     List<IndexAndDistance> retval =
         List<IndexAndDistance>.empty(growable: true);
-    SwarmElementData thisElement = elements[elementIndex];
-    for (int i = 0; i < numElements; i++) {
+    Fish thisElement = fishes[elementIndex];
+    for (int i = 0; i < numFishes; i++) {
       if (i == elementIndex) continue;
 
-      SwarmElementData otherElement = elements[i];
+      Fish otherElement = fishes[i];
       var distance = sqrt(pow(thisElement.x - otherElement.x, 2) +
           pow(thisElement.y - otherElement.y, 2));
       if (distance < range) {
@@ -116,9 +113,11 @@ class FishSwarmState extends State<FishSwarm> {
   }
 
   void alignWithNeighbours() {
-    for (int i = 0; i < numElements; i++) {
-      elements[i].oldRx = cos(elements[i].rotation);
-      elements[i].oldRy = sin(elements[i].rotation);
+    for (int i = 0; i < numFishes; i++) {
+      fishes[i] = fishes[i].copyWith(
+        oldRx: cos(fishes[i].rotation),
+        oldRy: sin(fishes[i].rotation),
+      );
     }
 
     if (alignmentParameter == 0.0) return;
@@ -126,11 +125,11 @@ class FishSwarmState extends State<FishSwarm> {
     double sumX = 0.0;
     double sumY = 0.0;
 
-    for (int i = 0; i < numElements; i++) {
+    for (int i = 0; i < numFishes; i++) {
       List<IndexAndDistance> neighbours = listNeighboursInRange(i, 30.0);
       for (int index = 0; index < neighbours.length; index++) {
-        sumX += elements[neighbours[index].index].oldRx;
-        sumY += elements[neighbours[index].index].oldRy;
+        sumX += fishes[neighbours[index].index].oldRx;
+        sumY += fishes[neighbours[index].index].oldRy;
       }
 
       if (sumX == 0.0 && sumY == 0.0) continue;
@@ -139,92 +138,98 @@ class FishSwarmState extends State<FishSwarm> {
       sumX /= length;
       sumY /= length;
 
-      elements[i].rotation = atan2(
-          elements[i].oldRy + sumY * alignmentParameter,
-          elements[i].oldRx + sumX * alignmentParameter);
+      fishes[i] = fishes[i].copyWith(
+        rotation: atan2(fishes[i].oldRy + sumY * alignmentParameter,
+            fishes[i].oldRx + sumX * alignmentParameter),
+      );
     }
   }
 
   void avoidNeighbours() {
-    for (int i = 0; i < numElements; i++) {
-      elements[i].oldRx = cos(elements[i].rotation);
-      elements[i].oldRy = sin(elements[i].rotation);
+    for (int i = 0; i < numFishes; i++) {
+      fishes[i] = fishes[i].copyWith(
+        oldRx: cos(fishes[i].rotation),
+        oldRy: sin(fishes[i].rotation),
+      );
     }
 
     double sumX = 0.0;
     double sumY = 0.0;
 
-    for (int i = 0; i < numElements; i++) {
+    for (int i = 0; i < numFishes; i++) {
       List<IndexAndDistance> neighbours = listNeighboursInRange(i, 100.0);
       for (int index = 0; index < neighbours.length; index++) {
         double force = avoidanceParameter / pow(neighbours[index].distance, 2);
 
-        sumX += force * (elements[i].x - elements[neighbours[index].index].x);
-        sumY += force * (elements[i].y - elements[neighbours[index].index].y);
+        sumX += force * (fishes[i].x - fishes[neighbours[index].index].x);
+        sumY += force * (fishes[i].y - fishes[neighbours[index].index].y);
       }
 
       if (sumX == 0.0 && sumY == 0.0) continue;
 
-      elements[i].rotation = atan2(
-          elements[i].oldRy + sumY * alignmentParameter,
-          elements[i].oldRx + sumX * alignmentParameter);
+      fishes[i] = fishes[i].copyWith(
+        rotation: atan2(fishes[i].oldRy + sumY, fishes[i].oldRx + sumX),
+      );
     }
   }
 
   void turnTowardNeighbours() {
-    for (int i = 0; i < numElements; i++) {
-      elements[i].oldRx = cos(elements[i].rotation);
-      elements[i].oldRy = sin(elements[i].rotation);
+    for (int i = 0; i < numFishes; i++) {
+      fishes[i] = fishes[i].copyWith(
+        oldRx: cos(fishes[i].rotation),
+        oldRy: sin(fishes[i].rotation),
+      );
     }
 
     double sumX = 0.0;
     double sumY = 0.0;
 
-    for (int i = 0; i < numElements; i++) {
+    for (int i = 0; i < numFishes; i++) {
       List<IndexAndDistance> neighbours = listNeighboursInRange(i, 400.0);
       for (int index = 0; index < neighbours.length; index++) {
-        sumX += elements[neighbours[index].index].x;
-        sumY += elements[neighbours[index].index].y;
+        sumX += fishes[neighbours[index].index].x;
+        sumY += fishes[neighbours[index].index].y;
       }
 
       double avgX = sumX / neighbours.length;
       double avgY = sumY / neighbours.length;
 
-      double directionX = avgX - elements[i].x;
-      double directionY = avgY - elements[i].y;
+      double directionX = avgX - fishes[i].x;
+      double directionY = avgY - fishes[i].y;
 
       double length = sqrt(pow(directionX, 2) + pow(directionY, 2));
       if (directionY == 0 && directionX == 0) length = 10.0;
 
-      elements[i].rotation = atan2(
-          elements[i].oldRy + directionY * attractionParameter / length,
-          elements[i].oldRx + directionX * attractionParameter / length);
+      fishes[i] = fishes[i].copyWith(
+        rotation: atan2(
+            fishes[i].oldRy + directionY * attractionParameter / length,
+            fishes[i].oldRx + directionX * attractionParameter / length),
+      );
     }
   }
 
   void applyVelocity() {
-    for (int i = 0; i < numElements; i++) {
-      elements[i].x += v * cos(elements[i].rotation);
-      elements[i].y += v * sin(elements[i].rotation);
+    for (int i = 0; i < numFishes; i++) {
+      fishes[i] = fishes[i].copyWith(
+        x: fishes[i].x + v * cos(fishes[i].rotation),
+        y: fishes[i].y + v * sin(fishes[i].rotation),
+      );
     }
   }
 
   void updateSwarm() {
-    setState(() {
-      alignWithNeighbours();
-      avoidNeighbours();
-      turnTowardNeighbours();
-      avoidWalls();
-      applyVelocity();
-    });
+    avoidWalls();
+    avoidNeighbours();
+    alignWithNeighbours();
+    turnTowardNeighbours();
+    applyVelocity();
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
       body: Stack(
@@ -282,14 +287,14 @@ class FishSwarmState extends State<FishSwarm> {
               ),
             ],
           ),
-          for (int i = 0; i < numElements; i++)
+          for (int i = 0; i < numFishes; i++)
             Align(
-              alignment: Alignment(elements[i].x, elements[i].y),
+              alignment: Alignment(fishes[i].x, fishes[i].y),
               child: FractionallySizedBox(
                 widthFactor: 0.1,
                 heightFactor: 0.1,
                 child: Transform.rotate(
-                  angle: elements[i].rotation,
+                  angle: fishes[i].rotation,
                   child: const Icon(
                     Icons.arrow_right,
                     color: Colors.orange,

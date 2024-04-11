@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,28 +9,44 @@ import '../domain/fish.dart';
 
 class SwarmBloc extends Bloc<SwarmEvent, SwarmState> {
   SwarmBloc() : super(SwarmState.initial()) {
-    on<SwarmStep>(onStep);
+    on<SwarmStep>(_onStep);
+    on<SwarmUpdateParameters>(_onUpdateParameters);
+
+    // Start the swarm
+    Timer.periodic(const Duration(milliseconds: 10), (_) => add(SwarmStep()));
   }
 
-  onStep(_, emit) {
+  _onStep(_, emit) {
+    final stopwatch = Stopwatch()..start();
     // Do logic to update fish positions
-    _alignWithNeighbours();
-    _avoidNeighbours();
-    _turnTowardNeighbours();
-    _avoidWalls();
-    _applyVelocity();
+    final fishes = List<Fish>.from(state.fishes);
 
-    emit(state);
+    _alignWithNeighbours(fishes);
+    _avoidNeighbours(fishes);
+    _turnTowardNeighbours(fishes);
+    _avoidWalls(fishes);
+    _applyVelocity(fishes);
+
+    emit(state.copyWith(fishes: fishes));
   }
 
-  get numFishes => state.numFishes;
-  get fishes => state.fishes;
+  _onUpdateParameters(event, emit) {
+    emit(state.copyWith(
+      v: event.v ?? state.v,
+      alignmentParameter: event.alignmentParameter ?? state.alignmentParameter,
+      avoidanceParameter: event.avoidanceParameter ?? state.avoidanceParameter,
+      attractionParameter:
+          event.attractionParameter ?? state.attractionParameter,
+    ));
+  }
+
+  get numFishes => state.fishes.length;
   get v => state.v;
   get alignmentParameter => state.alignmentParameter;
   get avoidanceParameter => state.avoidanceParameter;
   get attractionParameter => state.attractionParameter;
 
-  void _avoidWalls() {
+  void _avoidWalls(List<Fish> fishes) {
     for (int i = 0; i < numFishes; i++) {
       fishes[i] = fishes[i].copyWith(
         oldRx: cos(fishes[i].rotation),
@@ -61,7 +78,8 @@ class SwarmBloc extends Bloc<SwarmEvent, SwarmState> {
     }
   }
 
-  List<_IndexAndDistance> _listNeighboursInRange(elementIndex, double range) {
+  List<_IndexAndDistance> _listNeighboursInRange(
+      elementIndex, double range, List<Fish> fishes) {
     List<_IndexAndDistance> retval =
         List<_IndexAndDistance>.empty(growable: true);
     Fish thisElement = fishes[elementIndex];
@@ -79,7 +97,7 @@ class SwarmBloc extends Bloc<SwarmEvent, SwarmState> {
     return retval;
   }
 
-  void _alignWithNeighbours() {
+  void _alignWithNeighbours(List<Fish> fishes) {
     for (int i = 0; i < numFishes; i++) {
       fishes[i] = fishes[i].copyWith(
         oldRx: cos(fishes[i].rotation),
@@ -93,7 +111,8 @@ class SwarmBloc extends Bloc<SwarmEvent, SwarmState> {
     double sumY = 0.0;
 
     for (int i = 0; i < numFishes; i++) {
-      List<_IndexAndDistance> neighbours = _listNeighboursInRange(i, 30.0);
+      List<_IndexAndDistance> neighbours =
+          _listNeighboursInRange(i, 30.0, fishes);
       for (int index = 0; index < neighbours.length; index++) {
         sumX += fishes[neighbours[index].index].oldRx;
         sumY += fishes[neighbours[index].index].oldRy;
@@ -112,7 +131,7 @@ class SwarmBloc extends Bloc<SwarmEvent, SwarmState> {
     }
   }
 
-  void _avoidNeighbours() {
+  void _avoidNeighbours(List<Fish> fishes) {
     for (int i = 0; i < numFishes; i++) {
       fishes[i] = fishes[i].copyWith(
         oldRx: cos(fishes[i].rotation),
@@ -124,7 +143,8 @@ class SwarmBloc extends Bloc<SwarmEvent, SwarmState> {
     double sumY = 0.0;
 
     for (int i = 0; i < numFishes; i++) {
-      List<_IndexAndDistance> neighbours = _listNeighboursInRange(i, 100.0);
+      List<_IndexAndDistance> neighbours =
+          _listNeighboursInRange(i, 100.0, fishes);
       for (int index = 0; index < neighbours.length; index++) {
         double force = avoidanceParameter / pow(neighbours[index].distance, 2);
 
@@ -140,7 +160,7 @@ class SwarmBloc extends Bloc<SwarmEvent, SwarmState> {
     }
   }
 
-  void _turnTowardNeighbours() {
+  void _turnTowardNeighbours(List<Fish> fishes) {
     for (int i = 0; i < numFishes; i++) {
       fishes[i] = fishes[i].copyWith(
         oldRx: cos(fishes[i].rotation),
@@ -152,7 +172,8 @@ class SwarmBloc extends Bloc<SwarmEvent, SwarmState> {
     double sumY = 0.0;
 
     for (int i = 0; i < numFishes; i++) {
-      List<_IndexAndDistance> neighbours = _listNeighboursInRange(i, 400.0);
+      List<_IndexAndDistance> neighbours =
+          _listNeighboursInRange(i, 400.0, fishes);
       for (int index = 0; index < neighbours.length; index++) {
         sumX += fishes[neighbours[index].index].x;
         sumY += fishes[neighbours[index].index].y;
@@ -175,7 +196,7 @@ class SwarmBloc extends Bloc<SwarmEvent, SwarmState> {
     }
   }
 
-  void _applyVelocity() {
+  void _applyVelocity(List<Fish> fishes) {
     for (int i = 0; i < numFishes; i++) {
       fishes[i] = fishes[i].copyWith(
         x: fishes[i].x + v * cos(fishes[i].rotation),

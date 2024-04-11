@@ -1,12 +1,13 @@
+import 'package:equatable/equatable.dart';
+
 import '../domain/fish.dart';
 
-class SwarmState {
+class SwarmState extends Equatable {
   final List<Fish> fishes;
   final int attraction;
   final int repulsion;
   final int alignment;
   final double elementWidth;
-  final int numFishes;
   final double v;
   final double alignmentParameter;
   final double avoidanceParameter;
@@ -18,7 +19,6 @@ class SwarmState {
     required this.repulsion,
     required this.alignment,
     required this.elementWidth,
-    required this.numFishes,
     required this.v,
     required this.alignmentParameter,
     required this.avoidanceParameter,
@@ -26,12 +26,12 @@ class SwarmState {
   });
 
   SwarmState.initial()
-      : fishes = List<Fish>.empty(growable: true),
+      : fishes = List<Fish>.generate(20, (_) => const Fish.initial(),
+            growable: false),
         attraction = 1,
         repulsion = 1,
         alignment = 1,
         elementWidth = 0.2,
-        numFishes = 20,
         v = 0.01,
         alignmentParameter = 0.0,
         avoidanceParameter = 0.1,
@@ -55,11 +55,23 @@ class SwarmState {
       repulsion: repulsion ?? this.repulsion,
       alignment: alignment ?? this.alignment,
       elementWidth: elementWidth ?? this.elementWidth,
-      numFishes: numFishes ?? this.numFishes,
       v: v ?? this.v,
       alignmentParameter: alignmentParameter ?? this.alignmentParameter,
       avoidanceParameter: avoidanceParameter ?? this.avoidanceParameter,
       attractionParameter: attractionParameter ?? this.attractionParameter,
     );
   }
+
+  @override
+  List<Object?> get props => [
+        fishes,
+        attraction,
+        repulsion,
+        alignment,
+        elementWidth,
+        v,
+        alignmentParameter,
+        avoidanceParameter,
+        attractionParameter,
+      ];
 }

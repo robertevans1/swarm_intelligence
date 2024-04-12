@@ -1,16 +1,20 @@
-# swarm_intelligence
+# Swarm Intelligence
 
-A demonstration of the boids algorithm
+A demonstration emergent flocking behaviour using the boids algorithm
 
-## Getting Started
+## Why?
 
-This project is a starting point for a Flutter application.
+Swarm intelligence is phenomenon where a group as able to achieve a common and sometimes complex goal, even though each individual follows a simple set of rules.
+In nature organisms such as bees, ants, birds and fish, display swarm intelligence when building hives or nests, or flocking together.
+Swarm intelligence is of interest in robotics, as there some advantages to using many small, simple robots to accomplish a task rather than one larger one, amongst these advantages are reduced cost and complexity, parallelisation of work, and robustness to any single robot failure.
 
-A few resources to get you started if this is your first Flutter project:
+## What?
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+This repo builds a flutter app that simulates a shoal of fish swimming together. The direction each fish swims is affected by looking at it's nearset neighbours. The factors that influence with way the fish should swim to remain in the shoal are:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+- What is the general direction my close neighbors are swimming, try to align
+- Are any neighbors very close, turn away to give some space if so.
+- In which direction are neighbors more densely packed, try to swim toward this to keep in middle of the shoal
+- Is the edge of the swimming area close, turn away if so
+
+Modifying the relative strength of these different factors changes the behaviour of the shoal. This program allows the user to play around with each component.

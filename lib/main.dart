@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:swarm_intelligence_2/swarm/bloc/swarm_bloc.dart';
-import 'package:swarm_intelligence_2/swarm/bloc/swarm_event.dart';
-import 'package:swarm_intelligence_2/swarm/bloc/swarm_state.dart';
+import 'package:swarm_intelligence/swarm/bloc/swarm_bloc.dart';
+import 'package:swarm_intelligence/swarm/bloc/swarm_event.dart';
+import 'package:swarm_intelligence/swarm/bloc/swarm_state.dart';
 
 void main() {
   runApp(SwarmIntelligence());
@@ -97,10 +97,10 @@ class FishSwarm extends StatelessWidget {
                   heightFactor: 0.1,
                   child: Transform.rotate(
                     angle: state.fishes[i].rotation,
-                    child: const Icon(
-                      Icons.arrow_right,
-                      color: Colors.orange,
-                      size: 50.0,
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: const Image.asset('images/fish.png'),
                     ),
                   ),
                 ),

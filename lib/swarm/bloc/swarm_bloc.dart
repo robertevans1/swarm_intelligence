@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:swarm_intelligence_2/swarm/bloc/swarm_event.dart';
-import 'package:swarm_intelligence_2/swarm/bloc/swarm_state.dart';
+import 'package:swarm_intelligence/swarm/bloc/swarm_event.dart';
+import 'package:swarm_intelligence/swarm/bloc/swarm_state.dart';
 
 import '../domain/fish.dart';
 
@@ -98,14 +98,14 @@ class SwarmBloc extends Bloc<SwarmEvent, SwarmState> {
   }
 
   void _alignWithNeighbours(List<Fish> fishes) {
+    if (alignmentParameter == 0.0) return;
+
     for (int i = 0; i < numFishes; i++) {
       fishes[i] = fishes[i].copyWith(
         oldRx: cos(fishes[i].rotation),
         oldRy: sin(fishes[i].rotation),
       );
     }
-
-    if (alignmentParameter == 0.0) return;
 
     double sumX = 0.0;
     double sumY = 0.0;

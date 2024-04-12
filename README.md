@@ -1,4 +1,4 @@
-# swarm_intelligence_2
+# swarm_intelligence
 
 A demonstration of the boids algorithm
 

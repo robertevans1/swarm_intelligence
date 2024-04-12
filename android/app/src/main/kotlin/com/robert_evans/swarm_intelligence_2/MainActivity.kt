@@ -1,4 +1,4 @@
-package com.robert_evans.swarm_intelligence_2
+package com.robert_evans.swarm_intelligence
 
 import io.flutter.embedding.android.FlutterActivity
 

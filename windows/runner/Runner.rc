@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.robert_evans" "\0"
-            VALUE "FileDescription", "swarm_intelligence_2" "\0"
+            VALUE "FileDescription", "swarm_intelligence" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "swarm_intelligence_2" "\0"
+            VALUE "InternalName", "swarm_intelligence" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2024 com.robert_evans. All rights reserved." "\0"
-            VALUE "OriginalFilename", "swarm_intelligence_2.exe" "\0"
-            VALUE "ProductName", "swarm_intelligence_2" "\0"
+            VALUE "OriginalFilename", "swarm_intelligence.exe" "\0"
+            VALUE "ProductName", "swarm_intelligence" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

@@ -1,6 +1,6 @@
 {
-    "name": "swarm_intelligence_2",
-    "short_name": "swarm_intelligence_2",
+    "name": "swarm_intelligence",
+    "short_name": "swarm_intelligence",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
